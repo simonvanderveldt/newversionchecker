@@ -1,0 +1,7 @@
+gitdb2==2.0.0
+GitPython==2.1.1
+python-dateutil==2.6.0
+requests==2.13.0
+six==1.10.0
+smmap2==2.0.1
+toml==0.9.2
