@@ -40,7 +40,7 @@ def get_latest_git_tag(repo_url):
 
 def get_github_issues():
     try:
-        response = requests.get("https://api.github.com/repos/" + config['github_repo'] + "/issues?labels=versionbump&access_token=" + github_api_token, timeout=10)
+        response = requests.get("https://api.github.com/repos/" + config['github_repo'] + "/issues?labels=version+bump&access_token=" + github_api_token, timeout=10)
         response.raise_for_status()
     except requests.exceptions.RequestException as error:
         print(error)
@@ -72,7 +72,7 @@ for project_name, project_repo_url in config['projects'].items():
         'title': "New version " + latest_tag_name + " of " + project_name + " available",
         'body': "A new version " + latest_tag_name + " of " + project_name + " is available since " + str(latest_tag_date) + ". For more details see " + project_repo_url + "/releases",
         "labels": [
-            "versionbump"
+            "version bump"
         ]
     }
 
