@@ -43,7 +43,7 @@ def get_github_issues():
         response = requests.get("https://api.github.com/repos/" + config['github_repo'] + "/issues?labels=version+bump&access_token=" + github_api_token, timeout=10)
         response.raise_for_status()
     except requests.exceptions.RequestException as error:
-        print(error)
+        sys.exit(error)
 
     return response.json()
 
@@ -54,7 +54,7 @@ def create_github_issue(issue):
         response.raise_for_status()
         print("Issue created: " + response.json()['url'])
     except requests.exceptions.RequestException as error:
-        print(error)
+        sys.exit(error)
 
 
 for project_name, project_repo_url in config['projects'].items():
