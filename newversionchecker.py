@@ -4,6 +4,7 @@ import os
 import toml
 import dateutil.parser
 from git import Repo
+from git.exc import GitCommandError
 import requests
 import sys
 import tempfile
@@ -31,11 +32,18 @@ elif len(config['projects']) < 1 :
 def get_latest_git_tag(repo_url):
     with tempfile.TemporaryDirectory() as tmpdir:
         repo = Repo.clone_from(repo_url, os.path.normpath(tmpdir), depth=50)
-        latest_tag_name = repo.git.describe('--abbrev=0', '--tags')
+        try:
+            latest_tag_name = repo.git.describe('--abbrev=0', '--tags')
+        except GitCommandError as error:
+            if "No names found" in error.stderr:
+                return None
+            else:
+                sys.exit(error)
+
         # Get date and time from latest tag
         latest_tag_date = dateutil.parser.parse(repo.git.log('-1', '--format=%aI', latest_tag_name)).replace(tzinfo=datetime.timezone.utc)
         print("Latest tag: " + str(latest_tag_name) + ", created on: " + str(latest_tag_date))
-        return latest_tag_name, latest_tag_date
+        return {"name": latest_tag_name, "date": latest_tag_date}
 
 
 def get_github_issues():
@@ -60,17 +68,21 @@ def create_github_issue(issue):
 for project_name, project_repo_url in config['projects'].items():
     print("Checking latest version for " + project_name)
     check_date = datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(hours=config['check_interval'])
-    latest_tag_name, latest_tag_date = get_latest_git_tag(project_repo_url)
+    latest_tag = get_latest_git_tag(project_repo_url)
 
-    if latest_tag_date > check_date:
+    if not latest_tag:
+        print('Project has no tags, skipping')
+        continue
+
+    if latest_tag["date"] > check_date:
         print('Latest tag is newer than ' + str(config['check_interval']) + " hours, checking if there's already an issue for this version bump")
     else:
         print('Latest tag is older than ' + str(config['check_interval']) + ' hours, skipping')
         continue
 
     new_issue = {
-        'title': "New version " + latest_tag_name + " of " + project_name + " available",
-        'body': "A new version " + latest_tag_name + " of " + project_name + " is available since " + str(latest_tag_date) + ". For more details see " + project_repo_url + "/releases",
+        'title': "New version " + latest_tag["name"] + " of " + project_name + " available",
+        'body': "A new version " + latest_tag["name"] + " of " + project_name + " is available since " + str(latest_tag["date"]) + ". For more details see " + project_repo_url + "/releases",
         "labels": [
             "version bump"
         ]
